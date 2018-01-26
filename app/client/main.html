@@ -48,22 +48,14 @@
 			for (i = this.list.length - 1; i >= 0; i--) {
 				const signal = this.list[i];
 				if (signal.isDead()) {
+				    console.log("die", signal.type);
 					this.list.splice(i, 1);
 					continue;
 				}
 				signal.update();
 				if (signal.isTransmitting) {
 					for (let target of targets) {
-						const distance = dist(signal.pos.x, signal.pos.y ,target.pos.x, target.pos.y);
-						const strength = Math.abs(distance - signal.strength) / 100;
-						if (distance > signal.strength/2 || distance < 5) continue;
-						console.log(signal.pos.toString(), target.pos.toString(), distance, signal.strength, strength);
-
-						target.notify({
-							x: signal.pos.x,
-							y: signal.pos.y,
-							strength,
-						});
+						target.receives(signal);
 					}
 				}
 			}
@@ -91,8 +83,8 @@
 				rescuers.draw();
 			}
 		},
-		create({posX, posY, strength}) {
-			this.list.push(new Follower({posX, posY, strength}))
+		create({posX, posY, strength, type}) {
+			this.list.push(new Follower({posX, posY, strength, type}))
 		},
 		draw() {
 			for (let resc of this.list) {
@@ -115,8 +107,10 @@
 			this.transmitters = [];
 			this.isTransmitting = false;
 
-			this.life = 1000;
-			this.maxLife = 1000;
+			this.life = 500;
+			this.maxLife = 500;
+
+			this.type='emitter';
 		}
 
 		lifep() { return parseInt(this.life / this.maxLife * 100, 10); }
@@ -161,6 +155,7 @@
 			this.vel = createVector(0, 0);
 			this.dir = this.bounds(createVector(dirX, dirY));
 			this.speed = speed;
+			this.type = 'movable';
 		}
 
 		updateDir(x, y) {
@@ -195,6 +190,7 @@
 			this.size = 10;
 			this.initTransmission();
 			this.isTransmitting = true;
+			this.type = 'player';
 		}
 
 		update() {
@@ -215,10 +211,45 @@
 	}
 
 	class Follower extends Movable {
-		constructor({posX, posY, speed, col = 255, size = 10}) {
+		constructor({posX, posY, speed, type, size = 10}) {
 			super({posX, posY, speed});
-			this.col = col;
+			if (type === 'enemy') {
+			    this.col = [255,0,0];
+			}
+			if (type === 'rescuer') {
+				this.col = [0,0,255];
+			}
 			this.size = size;
+			this.type = type;
+		}
+
+		receives(signal) {
+			const distance = dist(signal.pos.x, signal.pos.y ,this.pos.x, this.pos.y)
+			let strength;
+			if (this.type === 'rescuer') {
+				if (distance > signal.strength/2) return false;
+				if (distance < 2 && signal.type === 'player') {
+				    throw new Error("won");
+				}
+			    strength = Math.abs(distance - signal.strength) / 100;
+			}
+			if (this.type === 'enemy') {
+				if (distance > signal.strength)
+				    return false;
+				if (distance < 2) {
+					if (signal.type === 'rescuer')
+						throw new Error("lost");
+				    if (signal.type === 'player')
+						throw new Error("lost");
+				}
+				strength = Math.abs(distance - signal.strength) / 250;
+			}
+
+			this.notify({
+				x: signal.pos.x,
+				y: signal.pos.y,
+				strength,
+			});
 		}
 
 		notify({x, y, strength}) {
@@ -227,13 +258,14 @@
 		}
 
 		draw() {
+		    stroke(255);
 			fill(this.col);
 			ellipse(this.pos.x, this.pos.y, this.size);
 		}
 	}
 
 	class Signal extends Movable {
-		constructor({posX, posY, dirX, dirY, speed = 4, col = 255, life = 1000, size = 5, strength}) {
+		constructor({posX, posY, dirX, dirY, speed = 4, col = 255, life = 500, size = 5, strength}) {
 			super({posX, posY, dirX, dirY, speed});
 			this.col = col;
 			this.maxLife = life;
@@ -348,8 +380,10 @@
 
 	function setup() {
 		createCanvas(WIDTH, HEIGHT);
-		player = new Player({posX: 30, posY: HEIGHT / 2})
-		rescuers.create({posX: random(WIDTH - WIDTH / 3, WIDTH - 15), posY: random(0, HEIGHT)})
+		player = new Player({posX: 30, posY: HEIGHT / 2});
+		rescuers.create({type: 'rescuer', posX: random(WIDTH - WIDTH / 3, WIDTH - 15), posY: random(0, HEIGHT)})
+		rescuers.create({type: 'rescuer', posX: random(WIDTH - WIDTH / 3, WIDTH - 15), posY: random(0, HEIGHT)})
+		rescuers.create({type: 'enemy', posX: random(WIDTH / 3 , WIDTH - WIDTH / 3), posY: random(0, HEIGHT)})
 		signals.list.push(player)
 	}
 
@@ -362,17 +396,11 @@
 				_strength = 100;
 		}
 
-		player.update();
+		player.update(rescuers.list);
 
 
 		//rescuers.update();
 		signals.update(rescuers.list);
-
-
-		// draw strength
-		stroke(0, 0, 0, 0);
-		fill(255);
-		rect(0, HEIGHT - 5, WIDTH * _strength / 100, 5);
 
 		rescuers.draw(debug);
 		player.draw(debug);
@@ -381,7 +409,7 @@
 		// draw target spot
 		stroke(255);
 		fill(255, 255, 255, 0);
-		ellipse(mouseX, mouseY, 30);
+		ellipse(mouseX, mouseY, _strength * 10);
 
 		debugui();
 	}
