@@ -14,8 +14,22 @@
 </nav>
 <script type="text/javascript">
 
+	//////////////////////////////////////////////////////////////////
+	//
+	//	GLOBAL VARS
+	//
+	//////////////////////////////////////////////////////////////////
+
 	const WIDTH = 1000;
 	const HEIGHT = 400;
+	const rescuers = [];
+
+	//////////////////////////////////////////////////////////////////
+	//
+	//	SINGLETONS
+	//
+	//////////////////////////////////////////////////////////////////
+
 
 	const Vec = {
 		sub(v1, v2) {
@@ -23,31 +37,145 @@
 		}
 	};
 
-	const rescuers = [];
-
-	// base class
-	// TODO extend from this
-	const Movable = {
-		speed: -1,
-		pos:null,
-		vel: null,
-		acc: null,
-		dir: null,
-		col: -1,
-		life: -1,
+	const player = {
+		pos: null,
+		col: 255,
+		size: 30,
+		draw() {
+			fill(this.col);
+			ellipse(this.pos.x, this.pos.y, this.size);
+			textSize(24);
+			textAlign(CENTER);
+			fill(0, 0, 255);
+			stroke(0, 0, 0, 0);
+			text('P', this.pos.x, this.pos.y + 9);
+		}
 	};
 
-	createRescuer = function ({pos, speed, reach}) {
-		return {
-		    pos, speed, reach,
-			update(){
+	//////////////////////////////////////////////////////////////////
+	//
+	//	DYNAMIC CLASSES
+	//
+	//////////////////////////////////////////////////////////////////
 
-			},
-			draw() {
+	class Movable {
 
-			},
-		};
-	};
+		constructor({posX, posY, dirX, dirY,  speed = 4}) {
+			this.pos = createVector(posX, posY);
+			this.acc = createVector(0, 0);
+			this.vel = createVector(0, 0);
+			this.dir = createVector(dirX, dirY);
+			this.speed = speed;
+		}
+
+		updateDir(x, y) {
+			this.dir.set(x, y);
+		}
+
+		move() {
+			const dir = Vec.sub(this.dir, this.pos);
+			dir.normalize();
+			dir.mult(0.5);
+			this.acc = dir;
+
+			this.vel.add(this.acc);
+			this.vel.limit(this.speed);
+			this.pos.add(this.vel);
+		}
+
+		hit(x2, y2) {
+			const x = this.pos.x;
+			const y = this.pos.y;
+			const rad = 10;
+			return !( x > ( x2 + rad ) || x < (x2 - rad) || y > ( y2 + rad ) || y < (y2 - rad) );
+		}
+	}
+
+	class Signal extends Movable {
+		constructor({posX, posY, dirX, dirY, speed = 4, col = 255, life = 1000, size = 5, strength = 100}) {
+			super({posX, posY, dirX, dirY, speed});
+			this.col = col;
+			this.life = life;
+			this.size = size;
+			this.strength = strength;
+			this.transmitters = [];
+			this.isTransmitting = false;
+			this.drawTarget = true;
+		}
+
+		isDead() { return this.life <= 0; }
+
+		update() {
+
+			if (!this.isTransmitting) {
+				if (this.life % 100)
+					this.drawTarget = !this.drawTarget;
+				this.move();
+				this.isTransmitting = this.hit(this.dir.x, this.dir.y);
+				if (this.isTransmitting) {
+					this.drawTarget = false;
+					this.initTransmission();
+				}
+			} else {
+				this.transmit();
+			}
+
+			// always
+			this.life--;
+		}
+
+		initTransmission() {
+			for (let i = 1; i < 5; i++) {
+				this.transmitters.push(createTransmitter({
+					pos: this.pos,
+					index: i,
+					strength: this.strength,
+				}))
+			}
+		}
+
+		transmit() {
+			// init transmitters
+			for (let transm of this.transmitters) {
+				transm.update();
+			}
+		}
+
+		draw() {
+			// draw actual transmitter
+			fill(this.life);
+			ellipse(this.pos.x, this.pos.y, this.size);
+
+			// draw target
+			if (this.drawTarget) {
+				fill(255, 255, 255, 0);
+				stroke(255);
+				ellipse(this.dir.x, this.dir.y, this.size * 3);
+			}
+
+			// draw transmitters wave
+			if (this.isTransmitting) {
+				for (let transm of this.transmitters) {
+					transm.draw();
+				}
+			}
+
+			// draw lifespan
+			stroke(0);
+			fill(255 - this.life, this.life, 0);
+			textAlign(CENTER);
+			textSize(20);
+			text(this.life.toString(), this.pos.x, this.pos.y - 20);
+		}
+
+	}
+
+	//////////////////////////////////////////////////////////////////
+	//
+	//	FACTORY FUNCTIONS
+	//
+	//////////////////////////////////////////////////////////////////
+
 
 	function createTransmitter({pos, strength, index}) {
 		return {
@@ -83,128 +211,14 @@
 			}
 
 		},
-		create({vPos, vDir, strength = 100}) {
-			this.list.push({
-				speed: 4,
-				pos: createVector(vPos.x, vPos.y),
-				vel: createVector(0, 0,),
-				acc: createVector(0, 0),
-				dir: createVector(vDir.x, vDir.y),
-				col: 255,
-				life: 1000,
-				size: 5,
-				transmitters: [],
-				strength,
-				isTransmitting: false,
-				drawTarget: true,
-				reached() {
-					const x = this.pos.x;
-					const y = this.pos.y;
-					const x2 = this.dir.x;
-					const y2 = this.dir.y;
-					const rad = 10;
-					return !( x > ( x2 + rad ) || x < (x2 - rad) || y > ( y2 + rad ) || y < (y2 - rad) );
-				},
-				isDead() { return this.life <= 0; },
-				update() {
-
-					if (!this.isTransmitting) {
-						this.move();
-						this.isTransmitting = this.reached();
-						if (this.isTransmitting) {
-							this.drawTarget = false;
-							this.initTransmission();
-						}
-					} else {
-						this.transmit();
-					}
-
-					// always
-					this.life--;
-				},
-				initTransmission() {
-					for (let i = 1; i < 5; i++) {
-						this.transmitters.push(createTransmitter({
-							pos: this.pos,
-							index: i,
-							strength: this.strength,
-						}))
-					}
-				},
-				transmit() {
-					// init transmitters
-					for (let transm of this.transmitters) {
-						transm.update();
-					}
-				},
-				move() {
-					if (this.life % 100)
-						this.drawTarget = !this.drawTarget;
-					const dir = Vec.sub(this.dir, this.pos);
-					dir.normalize();
-					dir.mult(0.5);
-					this.acc = dir;
-
-					this.vel.add(this.acc);
-					this.vel.limit(4);
-					this.pos.add(this.vel);
-				},
-
-				draw() {
-					// draw actual transmitter
-					fill(this.life);
-					ellipse(this.pos.x, this.pos.y, this.size);
-
-					// draw target
-					if (this.drawTarget) {
-						fill(255, 255, 255, 0);
-						stroke(255);
-						ellipse(this.dir.x, this.dir.y, this.size * 3);
-					}
-
-					// draw transmitters wave
-					if (this.isTransmitting) {
-						for (let transm of this.transmitters) {
-							transm.draw();
-						}
-					}
-
-					// draw lifespan
-					stroke(0);
-					fill(255 - this.life, this.life, 0);
-					textAlign(CENTER);
-					textSize(20);
-					text(this.life.toString(), this.pos.x, this.pos.y - 20);
-				}
-			});
+		create({posX, posY, dirX, dirY}) {
+			this.list.push(new Signal({posX, posY, dirX, dirY}))
 		}
 	};
 
-	const player = {
-		pos: null,
-		col: 255,
-		size: 30,
-		updateDir(x, y) {
-			this.dir.set(x, y);
-		},
-		draw() {
-			// view line
-			stroke(this.col);
-			fill(255, 255, 255, 0);
-			ellipse(mouseX, mouseY, this.size);
-
-			fill(this.col);
-			ellipse(this.pos.x, this.pos.y, this.size);
-			textSize(24);
-			textAlign(CENTER);
-			fill(0,0,255);
-			stroke(0,0,0,0);
-			text('P', this.pos.x, this.pos.y + 9);
-		}
-	};
 
 	function mouseClicked() {
-		signals.create({vPos: player.pos, vDir: player.dir, strength: 100});
+		signals.create({posX: player.pos.x, posY: player.pos.y, dirX: mouseX, dirY: mouseY});
 	}
 
 	function debugui() {
@@ -224,10 +238,14 @@
 
 
 		// always draw player
-		player.updateDir(mouseX, mouseY);
 		player.draw();
 
 		signals.update();
+
+		// draw target spot
+		stroke(255);
+		fill(255, 255, 255, 0);
+		ellipse(mouseX, mouseY, 30);
 
 		debugui();
 	}
