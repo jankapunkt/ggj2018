@@ -66,8 +66,8 @@
 			}
 
 		},
-		create({posX, posY, dirX, dirY}) {
-			this.list.push(new Signal({posX, posY, dirX, dirY}))
+		create({posX, posY, dirX, dirY, strength}) {
+			this.list.push(new Signal({posX, posY, dirX, dirY, strength}))
 		}
 	};
 
@@ -111,7 +111,7 @@
 	}
 
 	class Signal extends Movable {
-		constructor({posX, posY, dirX, dirY, speed = 4, col = 255, life = 1000, size = 5, strength = 100}) {
+		constructor({posX, posY, dirX, dirY, speed = 4, col = 255, life = 1000, size = 5, strength}) {
 			super({posX, posY, dirX, dirY, speed});
 			this.col = col;
 			this.maxLife = life;
@@ -121,6 +121,7 @@
 			this.transmitters = [];
 			this.isTransmitting = false;
 			this.drawTarget = true;
+			console.log(strength);
 		}
 
 		lifep() { return parseInt(this.life / this.maxLife * 100, 10); }
@@ -221,8 +222,19 @@
 	}
 
 
-	function mouseClicked() {
-		signals.create({posX: player.pos.x, posY: player.pos.y, dirX: mouseX, dirY: mouseY});
+	let _strength = 0;
+	let setStrength = false;
+
+	function mousePressed() {
+		setStrength = true;
+		return true;
+	}
+
+	function mouseReleased() {
+	    setStrength = false;
+		signals.create({posX: player.pos.x, posY: player.pos.y, dirX: mouseX, dirY: mouseY, strength:_strength * 10});
+		_strength = 0;
+		return true;
 	}
 
 	function debugui() {
@@ -240,6 +252,15 @@
 	function draw() {
 		background(0);
 
+		if (setStrength) {
+			_strength++;
+			if (_strength > 100)
+			    _strength = 100;
+		}
+		// draw strength
+		stroke(0,0,0,0);
+		fill(255);
+		rect(0,HEIGHT-5,WIDTH * _strength / 100, 5);
 
 		// always draw player
 		player.draw();
