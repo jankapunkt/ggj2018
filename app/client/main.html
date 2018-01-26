@@ -22,7 +22,6 @@
 
 	const WIDTH = 1000;
 	const HEIGHT = 400;
-	const rescuers = [];
 
 	//////////////////////////////////////////////////////////////////
 	//
@@ -49,6 +48,26 @@
 			fill(0, 0, 255);
 			stroke(0, 0, 0, 0);
 			text('P', this.pos.x, this.pos.y + 9);
+		}
+	};
+
+	const signals = {
+		list: [],
+		update() {
+			// draw signals
+			let i;
+			for (i = this.list.length - 1; i >= 0; i--) {
+				const signal = this.list[i];
+				if (signal.isDead()) {
+					this.list.splice(i, 1);
+				}
+				signal.update();
+				signal.draw();
+			}
+
+		},
+		create({posX, posY, dirX, dirY}) {
+			this.list.push(new Signal({posX, posY, dirX, dirY}))
 		}
 	};
 
@@ -95,6 +114,7 @@
 		constructor({posX, posY, dirX, dirY, speed = 4, col = 255, life = 1000, size = 5, strength = 100}) {
 			super({posX, posY, dirX, dirY, speed});
 			this.col = col;
+			this.maxLife = life;
 			this.life = life;
 			this.size = size;
 			this.strength = strength;
@@ -102,6 +122,8 @@
 			this.isTransmitting = false;
 			this.drawTarget = true;
 		}
+
+		lifep() { return parseInt(this.life / this.maxLife * 100, 10); }
 
 		isDead() { return this.life <= 0; }
 
@@ -162,10 +184,10 @@
 
 			// draw lifespan
 			stroke(0);
-			fill(255 - this.life, this.life, 0);
+			fill(255 - this.life, this.life, 0, 150);
 			textAlign(CENTER);
 			textSize(20);
-			text(this.life.toString(), this.pos.x, this.pos.y - 20);
+			text(this.lifep().toString(), this.pos.x, this.pos.y - 20);
 		}
 
 	}
@@ -183,38 +205,20 @@
 			size: strength / index,
 			strength: strength,
 			index,
+			col:255,
 			update() {
 				if (this.size > this.strength)
 					this.size = 0;
 				this.size++;
+				this.col = 255 - 255 * (this.size / this.strength);
 			},
 			draw() {
 				fill(0, 0, 0, 0);
-				stroke(255);
+				stroke(this.col);
 				ellipse(this.pos.x, this.pos.y, this.size)
 			}
 		};
 	}
-
-	const signals = {
-		list: [],
-		update() {
-			// draw signals
-			let i;
-			for (i = this.list.length - 1; i >= 0; i--) {
-				const signal = this.list[i];
-				if (signal.isDead()) {
-					this.list.splice(i, 1);
-				}
-				signal.update();
-				signal.draw();
-			}
-
-		},
-		create({posX, posY, dirX, dirY}) {
-			this.list.push(new Signal({posX, posY, dirX, dirY}))
-		}
-	};
 
 
 	function mouseClicked() {
