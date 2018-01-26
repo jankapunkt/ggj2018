@@ -36,21 +36,6 @@
 		}
 	};
 
-	const player = {
-		pos: null,
-		col: 255,
-		size: 30,
-		draw() {
-			fill(this.col);
-			ellipse(this.pos.x, this.pos.y, this.size);
-			textSize(24);
-			textAlign(CENTER);
-			fill(0, 0, 255);
-			stroke(0, 0, 0, 0);
-			text('P', this.pos.x, this.pos.y + 9);
-		}
-	};
-
 	const signals = {
 		list: [],
 		update() {
@@ -64,10 +49,24 @@
 				signal.update();
 				signal.draw();
 			}
-
 		},
 		create({posX, posY, dirX, dirY, strength}) {
 			this.list.push(new Signal({posX, posY, dirX, dirY, strength}))
+		}
+	};
+
+	const rescuers = {
+	  	list: [],
+		update() {
+			let i;
+			for (i = this.list.length - 1; i >= 0; i--) {
+				const rescuers = this.list[i];
+				if (rescuers.isDead()) {
+					this.list.splice(i, 1);
+				}
+				rescuers.update();
+				rescuers.draw();
+			}
 		}
 	};
 
@@ -77,10 +76,41 @@
 	//
 	//////////////////////////////////////////////////////////////////
 
-	class Movable {
+	class SignalEmitter {
+	    constructor({posX, posY, strength}) {
+	        this.pos = createVector(posX, posY);
+	        this.strength = strength;
 
-		constructor({posX, posY, dirX, dirY,  speed = 4}) {
-			this.pos = createVector(posX, posY);
+	        this.transmitters = [];
+			this.isTransmitting = false;
+		}
+
+		initTransmission() {
+			for (let i = 1; i < 5; i++) {
+				this.transmitters.push(createTransmitter({
+					pos: this.pos,
+					index: i,
+					strength: this.strength,
+				}))
+			}
+		}
+
+		transmit() {
+	        if (!this.isTransmitting)
+	            return;
+
+			// init transmitters
+			for (let transm of this.transmitters) {
+				transm.update();
+				transm.draw();
+			}
+		}
+	}
+
+	class Movable extends SignalEmitter{
+
+		constructor({posX, posY, dirX, dirY,  strength, speed = 4}) {
+			super({posX, posY, strength});
 			this.acc = createVector(0, 0);
 			this.vel = createVector(0, 0);
 			this.dir = createVector(dirX, dirY);
@@ -110,6 +140,38 @@
 		}
 	}
 
+	class Player extends SignalEmitter {
+	    constructor({posX, posY}) {
+	    	super({posX, posY, strength: 100});
+			this.col = 255;
+			this.size = 10;
+			this.initTransmission();
+			this.isTransmitting = true;
+		}
+
+		update() {
+	        this.transmit();
+		}
+
+		draw(debug=false) {
+			fill(this.col);
+			ellipse(this.pos.x, this.pos.y, this.size);
+			textSize(24);
+			if (debug){
+			    textAlign(CENTER);
+				fill(0, 0, 255);
+				stroke(0, 0, 0, 0);
+				text('P', this.pos.x, this.pos.y - 20);
+			}
+		}
+	}
+
+	class Rescuer extends Movable {
+		constructor({posX, posY, speed}) {
+			super({posX, posY, speed});
+		}
+	}
+
 	class Signal extends Movable {
 		constructor({posX, posY, dirX, dirY, speed = 4, col = 255, life = 1000, size = 5, strength}) {
 			super({posX, posY, dirX, dirY, speed});
@@ -118,8 +180,8 @@
 			this.life = life;
 			this.size = size;
 			this.strength = strength;
-			this.transmitters = [];
-			this.isTransmitting = false;
+
+
 			this.drawTarget = true;
 			console.log(strength);
 		}
@@ -147,23 +209,6 @@
 			this.life--;
 		}
 
-		initTransmission() {
-			for (let i = 1; i < 5; i++) {
-				this.transmitters.push(createTransmitter({
-					pos: this.pos,
-					index: i,
-					strength: this.strength,
-				}))
-			}
-		}
-
-		transmit() {
-			// init transmitters
-			for (let transm of this.transmitters) {
-				transm.update();
-			}
-		}
-
 		draw() {
 			// draw actual transmitter
 			fill(this.life);
@@ -176,12 +221,6 @@
 				ellipse(this.dir.x, this.dir.y, this.size * 3);
 			}
 
-			// draw transmitters wave
-			if (this.isTransmitting) {
-				for (let transm of this.transmitters) {
-					transm.draw();
-				}
-			}
 
 			// draw lifespan
 			stroke(0);
@@ -224,6 +263,7 @@
 
 	let _strength = 0;
 	let setStrength = false;
+	let player;
 
 	function mousePressed() {
 		setStrength = true;
@@ -245,8 +285,7 @@
 
 	function setup() {
 		createCanvas(WIDTH, HEIGHT);
-		player.pos = createVector(30, HEIGHT / 2);
-		player.dir = createVector(0, 0);
+		player = new Player({posX:30, posY: HEIGHT / 2})
 	}
 
 	function draw() {
@@ -257,6 +296,12 @@
 			if (_strength > 100)
 			    _strength = 100;
 		}
+
+		player.update();
+		rescuers.update();
+		signals.update();
+
+
 		// draw strength
 		stroke(0,0,0,0);
 		fill(255);
@@ -264,8 +309,6 @@
 
 		// always draw player
 		player.draw();
-
-		signals.update();
 
 		// draw target spot
 		stroke(255);
