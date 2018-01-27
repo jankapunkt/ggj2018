@@ -20,9 +20,12 @@
 		//
 		//////////////////////////////////////////////////////////////////
 		let timerId = setInterval(function () {
-			timer++;
+			timer--;
+			if (timer <= 0) {
+			    end(false, 'time up');
+			}
 		}, 1000);
-		let timer = 0;
+		let timer = 120;
 
 		const debug = false;
 		const WIDTH = 1000;
@@ -79,12 +82,11 @@
 			update() {
 				let i;
 				for (i = this.list.length - 1; i >= 0; i--) {
-					const rescuers = this.list[i];
-					if (rescuers.isDead()) {
+					const follower = this.list[i];
+					if (follower.isDead()) {
 						this.list.splice(i, 1);
 					}
-					rescuers.update();
-					rescuers.draw();
+					follower.update();
 				}
 			},
 			create({posX, posY, strength, type}) {
@@ -224,11 +226,19 @@
 				if (type === 'rescuer') {
 					this.col = [0,0,255];
 					this.initTransmission();
+					this.isTransmitting = true;
 					this.sensor = random(this.size  * 2 , this.size * 4);
 				}
 				this.size = size;
 				this.type = type;
 				this.sensor = random(this.size  * 3 , this.size * 9);
+				this.isFollowing = false;
+			}
+
+			update() {
+			    if (this.type === 'rescuer') {
+			        this.transmit(this.lifeŝ);
+				}
 			}
 
 			receives(signal) {
@@ -240,7 +250,7 @@
 					    return false;
 					}
 					if (distance < 2 && signal.type === 'player') {
-					    throw new Error("won");
+					    end(true, "all collected");
 					}
 					strength = Math.abs(distance - signal.strength) / 100;
 				}
@@ -251,13 +261,13 @@
 					}
 					if (distance < 2) {
 						if (signal.type === 'rescuer')
-							throw new Error("lost");
+							end(false, 'all rescuers dead')
 						if (signal.type === 'player')
-							throw new Error("lost");
+							end(false, 'you have been killed')
 					}
 					strength = Math.abs(distance - signal.strength) / 250;
 				}
-
+				this.isFollowing = true;
 				this.notify({
 					x: signal.pos.x,
 					y: signal.pos.y,
@@ -266,10 +276,11 @@
 			}
 
 			notify({x, y, strength}) {
-			    this.isFollowing = true;
 				this.updateDir(x, y);
 				this.move(strength);
 			}
+
+
 
 			draw() {
 			    // draw sensor
@@ -278,10 +289,17 @@
 				//ellipse(this.pos.x, this.pos.y, this.sensor);
 				drawGradient(this.pos.x, this.pos.y, this.sensor, this.col[0], this.col[1], this.col[2]);
 
+				if (this.isFollowing && this.dir) {
+				    stroke(this.col);
+				    line(this.pos.x, this.pos.y, this.dir.x, this.dir.y);
+				}
+
 
 				noStroke();
 				fill(this.col);
 				ellipse(this.pos.x, this.pos.y, this.size);
+
+				this.isFollowing = false;
 			}
 		}
 
@@ -415,11 +433,16 @@
 
 		function setup() {
 			createCanvas(WIDTH, HEIGHT);
-			player = new Player({posX: 30, posY: HEIGHT / 2});
-			followers.create({type: 'rescuer', posX: random(WIDTH - WIDTH / 3, WIDTH - 15), posY: random(0, HEIGHT)})
-			followers.create({type: 'rescuer', posX: random(WIDTH - WIDTH / 3, WIDTH - 15), posY: random(0, HEIGHT)})
-			followers.create({type: 'enemy', posX: random(WIDTH / 3 , WIDTH - WIDTH / 3), posY: random(0, HEIGHT)})
-			signals.list.push(player)
+
+			player = new Player({posX: random(0, WIDTH), posY: random(0, HEIGHT)});
+			signals.list.push(player);
+
+			for (let i = 0; i < 10; i ++ ) {
+				followers.create({
+					type: i%2 ?'rescuer' : 'enemy',
+					posX: random(0, WIDTH),
+					posY: random(0, HEIGHT)})
+			}
 		}
 
 		function draw() {
@@ -434,7 +457,7 @@
 			player.update(followers.list);
 
 
-			//followers.update();
+			followers.update();
 			signals.update(followers.list);
 
 			followers.draw(debug);
@@ -454,6 +477,11 @@
 			text(timer.toString(), WIDTH - 20, 20)
 
 			debugui();
+		}
+
+		function end(success, message) {
+		    noLoop();
+		    console.log(success, message)
 		}
 
 </script>
