@@ -21,7 +21,7 @@
 		//////////////////////////////////////////////////////////////////
 		let timerId = setInterval(function () {
 			timer++;
-		}, 1000)
+		}, 1000);
 		let timer = 0;
 
 		const debug = false;
@@ -219,28 +219,36 @@
 				super({posX, posY, speed});
 				if (type === 'enemy') {
 					this.col = [255,0,0];
+					this.sensor = random(this.size  * 3 , this.size * 9);
 				}
 				if (type === 'rescuer') {
 					this.col = [0,0,255];
 					this.initTransmission();
+					this.sensor = random(this.size  * 2 , this.size * 4);
 				}
 				this.size = size;
 				this.type = type;
+				this.sensor = random(this.size  * 3 , this.size * 9);
 			}
 
 			receives(signal) {
 				const distance = dist(signal.pos.x, signal.pos.y ,this.pos.x, this.pos.y)
 				let strength;
 				if (this.type === 'rescuer') {
-					if (distance > signal.strength/2) return false;
+					if (distance > signal.strength/2) {
+					    this.isFollowing = false;
+					    return false;
+					}
 					if (distance < 2 && signal.type === 'player') {
-						throw new Error("won");
+					    throw new Error("won");
 					}
 					strength = Math.abs(distance - signal.strength) / 100;
 				}
 				if (this.type === 'enemy') {
-					if (distance > signal.strength)
-						return false;
+					if (distance > signal.strength) {
+					    this.isFollowing = false;
+					    return false;
+					}
 					if (distance < 2) {
 						if (signal.type === 'rescuer')
 							throw new Error("lost");
@@ -258,12 +266,20 @@
 			}
 
 			notify({x, y, strength}) {
+			    this.isFollowing = true;
 				this.updateDir(x, y);
 				this.move(strength);
 			}
 
 			draw() {
-				stroke(255);
+			    // draw sensor
+				//noFill();
+				//stroke(this.col);
+				//ellipse(this.pos.x, this.pos.y, this.sensor);
+				drawGradient(this.pos.x, this.pos.y, this.sensor, this.col[0], this.col[1], this.col[2]);
+
+
+				noStroke();
 				fill(this.col);
 				ellipse(this.pos.x, this.pos.y, this.size);
 			}
@@ -304,7 +320,7 @@
 
 			draw(debug=false) {
 				// draw actual transmitter
-				fill(this.life);
+				fill(255 - this.life, this.life, 0, this.col);
 				ellipse(this.pos.x, this.pos.y, this.size);
 
 				// draw target
@@ -365,7 +381,6 @@
 			};
 		}
 
-
 		let _strength = 0;
 		let setStrength = false;
 		let player;
@@ -380,6 +395,16 @@
 			signals.create({posX: player.pos.x, posY: player.pos.y, dirX: mouseX, dirY: mouseY, strength: _strength * 10});
 			_strength = 0;
 			return true;
+		}
+
+		function drawGradient(x, y, dim, r, g, b) {
+			let h = 0;
+			for (let rad = dim; rad > 0; --rad) {
+				noStroke();
+			    fill(r, g, b, h);
+				ellipse(x, y, rad, rad);
+				h = (h + 0.1) % 360;
+			}
 		}
 
 		function debugui() {
