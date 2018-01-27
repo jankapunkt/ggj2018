@@ -1,11 +1,11 @@
 /* CSS declarations go here */
 
-.main-container {
-	background : gray;
-	height: 400px;
+#canvas-container {
+	display: flex;
+	justify-content: center;
 }
 
-#canvas {
-	width: 100%;
+.main-container {
+	background : gray;
 	height: 400px;
 }

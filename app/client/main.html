@@ -4,28 +4,64 @@
 
 <body>
 <nav class="navbar navbar-default">
-	<div class="container-fluid">
+	<div class="container">
 		<div class="navbar-header">
 			<a class="navbar-brand" href="#">
 				<img alt="Brand" src="./brand.png">
 			</a>
 		</div>
+		<ul class="nav navbar-nav pull-right">
+			<li>
+				<a class="navbar-link" href="/scores">Highscores</a>
+			</li>
+		</ul>
+
 	</div>
 </nav>
-<script type="text/javascript">
+<div class="container">
+	<div class="row">
+		<div class="col text-center">
+			{{#if (state 'isRunning')}}
+			<span class="badge">Rescued: {{state 'rescuers'}}</span>
+			<span class="badge">
+				<i class="fa fa-clock-o"></i> {{state 'timer'}}
+			</span>
+				{{else}}
+				<p>Click the Start Game button, when you're ready to start</p>
+				<button class="btn btn-large btn-primary">Start Game</button>
+				<hr />
+			{{/if}}
+		</div>
+	</div>
+	<div class="row">
+		<div id="canvas-container" class="col"></div>
+	</div>
+	<script type="text/javascript">
+
+
+		function collect(rescuer) {
+			followers.list.splice(followers.list.indexOf(rescuer), 1);
+			const collectedRescuers = state.get('rescuers') + 1;
+			if (collectedRescuers >= state.get('maxRescuers')) {
+				end(true, 'all rescued');
+			} else {
+				state.set('rescuers', collectedRescuers);
+			}
+		}
 
 		//////////////////////////////////////////////////////////////////
 		//
 		//	GLOBAL VARS
-		//
 		//////////////////////////////////////////////////////////////////
+		let timer = 120;
 		let timerId = setInterval(function () {
 			timer--;
 			if (timer <= 0) {
-			    end(false, 'time up');
+				end(false, 'time up');
 			}
+			state.set('timer', timer)
 		}, 1000);
-		let timer = 120;
+
 
 		const debug = false;
 		const WIDTH = 1000;
@@ -62,12 +98,16 @@
 					signal.update();
 					if (signal.isTransmitting) {
 						for (let target of targets) {
-							target.receives(signal);
+							const result = target.receives(signal);
+							if (result && result.type === 'player' && target.type === 'rescuer') {
+								collect(target);
+								this.list.splice(i, 1);
+							}
 						}
 					}
 				}
 			},
-			draw(debug){
+			draw(debug) {
 				for (let signal of signals.list) {
 					signal.draw(debug);
 				}
@@ -116,7 +156,7 @@
 				this.life = 500;
 				this.maxLife = 500;
 
-				this.type='emitter';
+				this.type = 'emitter';
 			}
 
 			lifep() { return parseInt(this.life / this.maxLife * 100, 10); }
@@ -220,44 +260,42 @@
 			constructor({posX, posY, speed, type, size = 10}) {
 				super({posX, posY, speed});
 				if (type === 'enemy') {
-					this.col = [255,0,0];
-					this.sensor = random(this.size  * 3 , this.size * 9);
+					this.col = [255, 0, 0];
+					this.sensor = random(this.size * 3, this.size * 9);
 				}
 				if (type === 'rescuer') {
-					this.col = [0,0,255];
+					this.col = [0, 0, 255];
 					this.initTransmission();
 					this.isTransmitting = true;
-					this.sensor = random(this.size  * 2 , this.size * 4);
+					this.sensor = random(this.size * 2, this.size * 4);
 				}
 				this.size = size;
 				this.type = type;
-				this.sensor = random(this.size  * 3 , this.size * 9);
+				this.sensor = random(this.size * 3, this.size * 9);
 				this.isFollowing = false;
 			}
 
 			update() {
-			    if (this.type === 'rescuer') {
-			        this.transmit(this.lifeŝ);
+				if (this.type === 'rescuer') {
+					this.transmit(this.lifeŝ);
 				}
 			}
 
 			receives(signal) {
-				const distance = dist(signal.pos.x, signal.pos.y ,this.pos.x, this.pos.y)
+				const distance = dist(signal.pos.x, signal.pos.y, this.pos.x, this.pos.y)
 				let strength;
 				if (this.type === 'rescuer') {
-					if (distance > signal.strength/2) {
-					    this.isFollowing = false;
-					    return false;
+					if (distance > signal.strength / 2) {
+						return null;
 					}
 					if (distance < 2 && signal.type === 'player') {
-					    end(true, "all collected");
+						return signal;
 					}
 					strength = Math.abs(distance - signal.strength) / 100;
 				}
 				if (this.type === 'enemy') {
 					if (distance > signal.strength) {
-					    this.isFollowing = false;
-					    return false;
+						return null;
 					}
 					if (distance < 2) {
 						if (signal.type === 'rescuer')
@@ -267,7 +305,7 @@
 					}
 					strength = Math.abs(distance - signal.strength) / 250;
 				}
-				this.isFollowing = true;
+
 				this.notify({
 					x: signal.pos.x,
 					y: signal.pos.y,
@@ -276,22 +314,22 @@
 			}
 
 			notify({x, y, strength}) {
+				this.isFollowing = true;
 				this.updateDir(x, y);
 				this.move(strength);
 			}
 
 
-
 			draw() {
-			    // draw sensor
+				// draw sensor
 				//noFill();
 				//stroke(this.col);
 				//ellipse(this.pos.x, this.pos.y, this.sensor);
 				drawGradient(this.pos.x, this.pos.y, this.sensor, this.col[0], this.col[1], this.col[2]);
 
 				if (this.isFollowing && this.dir) {
-				    stroke(this.col);
-				    line(this.pos.x, this.pos.y, this.dir.x, this.dir.y);
+					stroke(this.col);
+					line(this.pos.x, this.pos.y, this.dir.x, this.dir.y);
 				}
 
 
@@ -299,7 +337,6 @@
 				fill(this.col);
 				ellipse(this.pos.x, this.pos.y, this.size);
 
-				this.isFollowing = false;
 			}
 		}
 
@@ -311,9 +348,9 @@
 				this.life = life;
 				this.size = size;
 				this.strength = strength;
-				this.speed = dist(posX, posY, dirX, dirY) / (strength/3);
+				this.speed = dist(posX, posY, dirX, dirY) / (strength / 3);
 				this.drawTarget = true;
-				this.type='signal';
+				this.type = 'signal';
 			}
 
 
@@ -336,7 +373,7 @@
 				this.life--;
 			}
 
-			draw(debug=false) {
+			draw(debug = false) {
 				// draw actual transmitter
 				fill(255 - this.life, this.life, 0, this.col);
 				ellipse(this.pos.x, this.pos.y, this.size);
@@ -349,15 +386,15 @@
 				}
 
 				if (debug) {
-					stroke(255,0,0);
-					fill(0,0,0,0)
+					stroke(255, 0, 0);
+					fill(0, 0, 0, 0)
 					ellipse(this.dir.x, this.dir.y, this.strength);
 				}
 
 
 				// draw lifespan
-				if (debug){
-				    stroke(0);
+				if (debug) {
+					stroke(0);
 					fill(255);
 					textAlign(CENTER);
 					textSize(20);
@@ -391,9 +428,9 @@
 				draw(life) {
 					fill(0, 0, 0, 0);
 					if (life)
-					    stroke(255 - life, life, 0, this.col);
+						stroke(255 - life, life, 0, this.col);
 					else
-					    stroke(this.col);
+						stroke(this.col);
 					ellipse(this.pos.x, this.pos.y, this.size)
 				}
 			};
@@ -410,7 +447,13 @@
 
 		function mouseReleased() {
 			setStrength = false;
-			signals.create({posX: player.pos.x, posY: player.pos.y, dirX: mouseX, dirY: mouseY, strength: _strength * 10});
+			signals.create({
+				posX: player.pos.x,
+				posY: player.pos.y,
+				dirX: mouseX,
+				dirY: mouseY,
+				strength: _strength * 10
+			});
 			_strength = 0;
 			return true;
 		}
@@ -419,7 +462,7 @@
 			let h = 0;
 			for (let rad = dim; rad > 0; --rad) {
 				noStroke();
-			    fill(r, g, b, h);
+				fill(r, g, b, h);
 				ellipse(x, y, rad, rad);
 				h = (h + 0.1) % 360;
 			}
@@ -432,16 +475,18 @@
 		}
 
 		function setup() {
-			createCanvas(WIDTH, HEIGHT);
+			const canvas = createCanvas(WIDTH, HEIGHT);
+			canvas.parent('canvas-container');
 
 			player = new Player({posX: random(0, WIDTH), posY: random(0, HEIGHT)});
 			signals.list.push(player);
 
-			for (let i = 0; i < 10; i ++ ) {
+			for (let i = 0; i < 10; i++) {
 				followers.create({
-					type: i%2 ?'rescuer' : 'enemy',
+					type: i % 2 ? 'rescuer' : 'enemy',
 					posX: random(0, WIDTH),
-					posY: random(0, HEIGHT)})
+					posY: random(0, HEIGHT)
+				})
 			}
 		}
 
@@ -451,7 +496,7 @@
 			if (setStrength) {
 				_strength++;
 				if (_strength > 100)
-				    _strength = 100;
+					_strength = 100;
 			}
 
 			player.update(followers.list);
@@ -480,9 +525,42 @@
 		}
 
 		function end(success, message) {
-		    noLoop();
-		    console.log(success, message)
+			noLoop();
+			clearTimeout(timerId)
+			state.set('win', success);
+			state.set('winMsg', message);
+			$('#end-modal').modal();
 		}
 
-</script>
+	</script>
+</div>
+<div id="end-modal" class="modal fade" role="dialog">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal">&times;</button>
+				<h4 class="modal-title {{#if (state 'win')}}text-success{{else}}text-danger{{/if}}">{{state
+						'winMsg'}}</h4>
+			</div>
+			<div class="modal-body">
+				{{#if (state 'win')}}
+					<p>Great! You should move to the next stage! Continue?</p>
+				{{else}}
+					<p>C'mon try again! You can do it! :-P</p>
+				{{/if}}
+			</div>
+			<div class="modal-footer">
+				{{#if (state 'win')}}
+					<button class="btn btn-success">
+						Next Stage
+					</button>
+				{{else}}
+					<button class="btn btn-primary">
+						Try again
+					</button>
+				{{/if}}
+			</div>
+		</div>
+	</div>
+</div>
 </body>
