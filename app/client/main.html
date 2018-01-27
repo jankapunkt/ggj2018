@@ -28,7 +28,7 @@
 			</span>
 				{{else}}
 				<p>Click the Start Game button, when you're ready to start</p>
-				<button class="btn btn-large btn-primary">Start Game</button>
+				<button id="start-game-button" class="btn btn-large btn-primary">Start Game</button>
 				<hr />
 			{{/if}}
 		</div>
@@ -53,14 +53,8 @@
 		//
 		//	GLOBAL VARS
 		//////////////////////////////////////////////////////////////////
-		let timer = 120;
-		let timerId = setInterval(function () {
-			timer--;
-			if (timer <= 0) {
-				end(false, 'time up');
-			}
-			state.set('timer', timer)
-		}, 1000);
+		let timer;
+		let timerId;
 
 
 		const debug = false;
@@ -441,11 +435,15 @@
 		let player;
 
 		function mousePressed() {
+			if (!isRunning) return;
+			if (mouseX < 0 || mouseX > WIDTH) return false;
 			setStrength = true;
 			return true;
 		}
 
 		function mouseReleased() {
+			if (!isRunning) return;
+		    if (mouseX < 0 || mouseX > WIDTH) return false;
 			setStrength = false;
 			signals.create({
 				posX: player.pos.x,
@@ -477,7 +475,11 @@
 		function setup() {
 			const canvas = createCanvas(WIDTH, HEIGHT);
 			canvas.parent('canvas-container');
+			noLoop();
+		}
 
+		function initGame() {
+		    console.log("init game");
 			player = new Player({posX: random(0, WIDTH), posY: random(0, HEIGHT)});
 			signals.list.push(player);
 
@@ -488,10 +490,25 @@
 					posY: random(0, HEIGHT)
 				})
 			}
+			timer = 120;
+			timerId = setInterval(function () {
+				timer--;
+				if (timer <= 0) {
+					end(false, 'time up');
+				}
+				state.set('timer', timer)
+			}, 1000);
+
+			isRunning = true;
+			loop();
 		}
+
+		let isRunning = false;
 
 		function draw() {
 			background(0);
+
+			if (!isRunning) return;
 
 			if (setStrength) {
 				_strength++;

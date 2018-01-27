@@ -12,4 +12,12 @@ Template.registerHelper('state', function (key) {
     return state.get(key);
 });
 
+Template.body.events({
+    'click #start-game-button'(event) {
+        event.preventDefault();
+        state.set('isRunning', true);
+        initGame();
+    }
+})
+
 import './main.html';
