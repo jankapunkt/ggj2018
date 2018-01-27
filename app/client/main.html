@@ -24,7 +24,7 @@
 		}, 1000)
 		let timer = 0;
 
-		const debug = true;
+		const debug = false;
 		const WIDTH = 1000;
 		const HEIGHT = 600;
 
@@ -139,14 +139,14 @@
 				}
 			}
 
-			transmit() {
+			transmit(life) {
 				if (!this.isTransmitting)
 					return;
 
 				// init transmitters
 				for (let transm of this.transmitters) {
 					transm.update();
-					transm.draw();
+					transm.draw(life);
 				}
 			}
 		}
@@ -278,9 +278,8 @@
 				this.size = size;
 				this.strength = strength;
 				this.speed = dist(posX, posY, dirX, dirY) / (strength/3);
-
 				this.drawTarget = true;
-				console.log(strength);
+				this.type='signal';
 			}
 
 
@@ -296,7 +295,7 @@
 						this.initTransmission();
 					}
 				} else {
-					this.transmit();
+					this.transmit(this.life);
 				}
 
 				// always
@@ -323,11 +322,11 @@
 
 
 				// draw lifespan
-				stroke(0);
+				/*stroke(0);
 				fill(255 - this.life, this.life, 0, 150);
 				textAlign(CENTER);
 				textSize(20);
-				text(this.lifep().toString(), this.pos.x, this.pos.y - 20);
+				text(this.lifep().toString(), this.pos.x, this.pos.y - 20);*/
 			}
 
 		}
@@ -352,9 +351,12 @@
 					this.size++;
 					this.col = 255 - 255 * (this.size / this.strength);
 				},
-				draw() {
+				draw(life) {
 					fill(0, 0, 0, 0);
-					stroke(this.col);
+					if (life)
+					    stroke(255 - life, life, 0, this.col);
+					else
+					    stroke(this.col);
 					ellipse(this.pos.x, this.pos.y, this.size)
 				}
 			};
