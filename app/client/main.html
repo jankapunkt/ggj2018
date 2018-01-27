@@ -26,10 +26,6 @@
 			<span class="badge">
 				<i class="fa fa-clock-o"></i> {{state 'timer'}}
 			</span>
-				{{else}}
-				<p>Click the Start Game button, when you're ready to start</p>
-				<button id="start-game-button" class="btn btn-large btn-primary">Start Game</button>
-				<hr />
 			{{/if}}
 		</div>
 	</div>
@@ -430,6 +426,7 @@
 			};
 		}
 
+		let rescuers = 0, enemies = 0;
 		let _strength = 0;
 		let setStrength = false;
 		let player;
@@ -475,22 +472,45 @@
 		function setup() {
 			const canvas = createCanvas(WIDTH, HEIGHT);
 			canvas.parent('canvas-container');
+			cleanupGame();
+		}
+
+		function  cleanupGame() {
+			signals.list.length = 0;
+			timer = 0;
+			followers.list.length = 0;
+			rescuers = state.get("rescuers");
+			enemies = state.get("enemies");
+			timer = state.get("timer");
+			startScreen = true;
+			isRunning = false;
 			noLoop();
 		}
 
 		function initGame() {
 		    console.log("init game");
+
+			rescuers = state.get("rescuers");
+			enemies = state.get("enemies");
+			timer = state.get("timer");
+
 			player = new Player({posX: random(0, WIDTH), posY: random(0, HEIGHT)});
 			signals.list.push(player);
 
-			for (let i = 0; i < 10; i++) {
+			for (let i = 0; i < rescuers; i++) {
 				followers.create({
-					type: i % 2 ? 'rescuer' : 'enemy',
+					type: 'rescuer',
 					posX: random(0, WIDTH),
 					posY: random(0, HEIGHT)
 				})
 			}
-			timer = 120;
+			for (let i = 0; i < enemies; i++) {
+				followers.create({
+					type: 'enemy',
+					posX: random(0, WIDTH),
+					posY: random(0, HEIGHT)
+				})
+			}
 			timerId = setInterval(function () {
 				timer--;
 				if (timer <= 0) {
@@ -500,13 +520,27 @@
 			}, 1000);
 
 			isRunning = true;
+			startScreen = false;
 			loop();
 		}
 
 		let isRunning = false;
+		let startScreen = true;
 
 		function draw() {
 			background(0);
+
+			if (startScreen) {
+			    fill(255);
+				textAlign(CENTER);
+				textSize(148);
+				text('NEXT LEVEL', WIDTH/2, HEIGHT / 2 - 100);
+				textSize(36);
+				text("Time: " + timer.toString(), WIDTH / 2, HEIGHT / 2 - 50);
+				text("Enemies: " + enemies.toString(), WIDTH / 2, HEIGHT / 2 );
+				text("Rescue: " + rescuers.toString(), WIDTH / 2, HEIGHT / 2 + 50);
+				text("Click screen to start", WIDTH / 2, HEIGHT / 2 + 150);
+			}
 
 			if (!isRunning) return;
 
@@ -541,8 +575,15 @@
 			debugui();
 		}
 
+		function mouseClicked() {
+		    if (startScreen && !isRunning) {
+		        initGame();
+			}
+		}
+
 		function end(success, message) {
 			noLoop();
+			isRunning = false;
 			clearTimeout(timerId)
 			state.set('win', success);
 			state.set('winMsg', message);
@@ -568,11 +609,11 @@
 			</div>
 			<div class="modal-footer">
 				{{#if (state 'win')}}
-					<button class="btn btn-success">
+					<button id="retry-level-button" class="btn btn-success">
 						Next Stage
 					</button>
 				{{else}}
-					<button class="btn btn-primary">
+					<button id="next-level-button" class="btn btn-primary">
 						Try again
 					</button>
 				{{/if}}
