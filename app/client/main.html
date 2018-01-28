@@ -39,14 +39,36 @@
 
 
 		function collect(rescuer) {
-			let index = followers.list.findIndex((el) => el.id === rescuer.id);
+
+			console.log("followes before removed", followers.list);
+			console.log("signals after removed", signals.list);
+
+			const newFollowers = [].concat(followers.list);
+			const newSignals = [].concat(signals.list);
+
+			let index = newFollowers.findIndex((el) => el.id === rescuer.id);
 			console.log("collect rescuer at ", index, rescuer.type);
 			if (index === -1) throw new Error("unexpected index");
-			followers.list.splice(index, 1);
+			newFollowers.splice(index, 1);
 
-			index = signals.list.findIndex((el) => el.id === rescuer.id);
-			signals.list.splice(index, 1);
-			console.log("removed", followers.list, signals.list);
+			index = newSignals.findIndex((el) => el.id === rescuer.id);
+			newSignals.splice(index, 1);
+
+			followers.list = newFollowers;
+			signals.list = newSignals;
+
+
+			// FIXME dirty quickfix
+			console.log(player);
+			const playerIndex = signals.list.find((el) => el.id === player.id);
+			if (playerIndex === -1) {
+			    player.type= 'player';
+			    signals.list.push(player);
+			}
+
+			console.log("followes after removed", followers.list);
+			console.log("signals after removed", signals.list);
+
 			const collectedRescuers = state.get('collected') + 1;
 			if (collectedRescuers >= state.get('rescuers')) {
 				end(true, 'All rescued!');
@@ -87,7 +109,9 @@
 			list: [],
 			update(targets) {
 				// draw signals
-				let i;
+
+
+				let i, j, retvals=[];
 				for (i = this.list.length - 1; i >= 0; i--) {
 					const signal = this.list[i];
 					if (signal.isDead()) {
@@ -96,9 +120,13 @@
 						continue;
 					}
 					signal.update();
+					if (signal.type === 'player') {
+					 	console.log(signal);
+					}
 					if (signal.isTransmitting) {
-						for (let follower of targets) {
+						for (j = targets.length - 1; j >= 0; j--) {
 
+						    let follower = targets[j]
 							if (signal.id === follower.id || signal.type === follower.type)
 								continue;
 
@@ -118,7 +146,7 @@
 
 								if (signal.type === 'player' && follower.type === 'rescuer') {
 									collect(follower);
-									this.list.splice(i, 1);
+									//this.list.splice(i, 1);
 								}
 							}
 						}
@@ -515,6 +543,7 @@
 			enemies = state.get("enemies");
 			timer = state.get("timer");
 			state.set('count', timer);
+			state.set('collected', 0);
 			loop();
 			startScreen = true;
 			isRunning = false;
@@ -529,7 +558,7 @@
 			enemies = state.get("enemies");
 			timer = state.get("timer");
 
-			player = new Player({posX: random(0, WIDTH), posY: random(0, HEIGHT)});
+			player = new Player({posX: WIDTH/2, posY: HEIGHT/2});
 			signals.list.push(player);
 
 			for (let i = 0; i < rescuers; i++) {
@@ -572,7 +601,7 @@
 			if (startScreen) {
 				fill(255);
 				textAlign(CENTER);
-				textSize(100);
+				textSize(72);
 				text('CURRENT LEVEL', WIDTH / 2, HEIGHT / 2 - 100);
 				textSize(36);
 				text("Time: " + timer.toString(), WIDTH / 2, HEIGHT / 2 - 50);
@@ -627,10 +656,12 @@
 			clearTimeout(timerId);
 			state.set('win', success);
 			state.set('winMsg', message);
-			state.set('currentScore', enemies * rescuers + timer);
+			const currentScore = enemies * rescuers + timer
+			state.set('currentScore',currentScore);
+
 			//console.log('end: ', success, message, state.get('win'), state.get('winMsg'), state.get('currentScore'));
-			if (Meteor.user() && Meteor.userId()) {
-				//Meteor.call('updateScore', {userId:Meteor.userId(), score}, function(){});
+			if (Meteor.userId()) {
+				Meteor.call('updateScore', {userId:Meteor.userId(), score:currentScore}, function(){});
 			}
 
 			$('#end-modal').modal();
@@ -690,6 +721,7 @@
 						<tr>
 							<td>{{this.score}}</td>
 							<td>{{this.username}}</td>
+							<td>lvl. {{this.level}}</td>
 						</tr>
 					{{else}}
 						<tr>

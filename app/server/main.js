@@ -6,17 +6,19 @@ Meteor.startup(() => {
 
 Accounts.onCreateUser((options, user) => {
     user.score = 0;
+    user.level = 1;
     return user;
 });
 
 Meteor.publish(null, function () {
-   return Meteor.users.find({}, {fields:{emails:1, score:1}})
+   return Meteor.users.find({}, {fields:{emails:1, score:1, level: 1}});
 });
 
 Meteor.methods({
     'updateScore'({userId, score}){
         const user = Meteor.users.findOne(userId);
-        Meteor.users.update(userId, {$set: {score: user.score + score}});
+        const level = user.level || 1;
+        Meteor.users.update(userId, {$set: {score: user.score + score, level: level + 1}});
     },
     'getScores'({limit=20}) {
         return Meteor.users.find({}, {sort: {score:-1}, limit}).fetch();

@@ -25,14 +25,22 @@ randomId = function () {
 Template.body.onCreated(function () {
 
 
-
     this.autorun(function () {
-        console.log(Meteor.user())
-       Meteor.call('getScores', {}, function (err, res) {
-           if (err) console.error(err);
-           state.set('scores', res.map(el => { return {username: el.emails[0].address, score: el.score || 0}}));
-           console.log(res);
-       })
+        if (Meteor.user()) {
+            console.log(Meteor.user())
+            state.set('level', Meteor.user().level || 1);
+            setLevel();
+            cleanupGame();
+        }
+
+
+        state.set('scores', Meteor.users.find({}, {sort:{score:-1}}).fetch().map(el => {
+            return {
+                level: el.level || 1,
+                username: el.emails[0].address,
+                score: el.score || 0
+            }
+        }));
     });
 });
 
@@ -40,10 +48,6 @@ Template.body.helpers({
 
     highScores() {
         return state.get('scores');
-    },
-
-    debug() {
-        console.log(state.get('win'),state.get('winMsg'), state.get('currentScore'))
     },
 
     state(key) {
@@ -72,7 +76,6 @@ Template.body.events({
     'click #retry-level-button'(event) {
         event.preventDefault();
         event.stopPropagation();
-
         cleanupGame();
     },
 
@@ -90,13 +93,25 @@ Template.body.events({
     }
 });
 
+function levelValue(start, level, factor) {
+    let tmp = start;
+    for (let i = 0; i < level; i++) {
+        tmp = Math.round(tmp * factor);
+    }
+    return tmp;
+}
+
 function setLevel() {
-    const tmr = state.get("timer");
-    state.set("timer", Math.round(tmr * 0.9));
-    const rsc = state.get("rescuers");
-    state.set("rescuers", Math.round(rsc * 1.6));
-    const enm = state.get("enemies");
-    state.set("enemies", Math.round(enm * 1.9));
+    const lvl = state.get("level");
+    let _timer = 300;
+    let _enemies = 1;
+    let _rescuers = 1;
+
+
+    state.set("timer", levelValue(_timer, lvl, 0.9));
+    state.set("rescuers", levelValue(_rescuers, lvl, 1.6));
+    state.set("enemies", levelValue(_enemies, lvl, 1.9));
+
 }
 
 function nextLevel() {
