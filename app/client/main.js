@@ -34,7 +34,9 @@ Template.body.onCreated(function () {
         }
 
 
-        state.set('scores', Meteor.users.find({}, {sort:{score:-1}}).fetch().map(el => {
+        state.set('scores', Meteor.users.find({}).fetch()
+            .sort((a,b)=> parseInt(b.score) - parseInt(a.score))
+            .map(el => {
             return {
                 level: el.level || 1,
                 username: el.emails[0].address,
@@ -94,11 +96,12 @@ Template.body.events({
 });
 
 function levelValue(start, level, factor) {
-    let tmp = start;
-    for (let i = 0; i < level; i++) {
-        tmp = Math.round(tmp * factor);
-    }
-    return tmp;
+    //let tmp = start;
+    //for (let i = 0; i < level; i++) {
+     //   tmp = Math.round(tmp * factor);
+    //}
+    //return tmp;
+    return Math.round(start * level * factor);
 }
 
 function setLevel() {
@@ -108,7 +111,7 @@ function setLevel() {
     let _rescuers = 1;
 
 
-    state.set("timer", levelValue(_timer, lvl, 0.9));
+    state.set("timer", Math.round(_timer - (lvl * 9.5)));
     state.set("rescuers", levelValue(_rescuers, lvl, 1.6));
     state.set("enemies", levelValue(_enemies, lvl, 1.9));
 

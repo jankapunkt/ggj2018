@@ -16,20 +16,21 @@
 				<a id="highScoresButton" class="navbar-link" href>High Scores</a>
 			</li>
 		</ul>
-		{{> loginButtons}}
 	</div>
 </nav>
 <div class="container">
+	<div>
+		<span class="pull-right">{{> loginButtons}}</span>
+	</div>
 	<div class="row">
 		<div class="col text-center">
 			{{#if (state 'isRunning')}}
 				<span class="badge">Rescued: {{state 'collected'}} / {{state 'rescuers'}}</span>
 				<span class="badge">
 				<i class="fa fa-clock-o"></i> {{state 'count'}}
-			</span>
-			{{else}}
-				<input type="number" id="levelSelect" />
+				</span>
 			{{/if}}
+			<br />
 		</div>
 	</div>
 	<div class="row">
@@ -179,7 +180,7 @@
 				const follower = new Follower({posX, posY, strength, type});
 				if (type === 'rescuer') {
 					follower.initTransmission({visible: false});
-					follower.isTransmitting = true;
+					follower.isTransmitting = false;
 				}
 				this.list.push(follower);
 				return follower;
@@ -360,6 +361,7 @@
 
 			notify({x, y, strength}) {
 				this.isFollowing = true;
+				if (this.type === 'followe') this.isTransmitting = true;
 				this.updateDir(x, y);
 				this.move(strength);
 			}
@@ -660,7 +662,7 @@
 			state.set('currentScore',currentScore);
 
 			//console.log('end: ', success, message, state.get('win'), state.get('winMsg'), state.get('currentScore'));
-			if (Meteor.userId()) {
+			if (success && Meteor.userId()) {
 				Meteor.call('updateScore', {userId:Meteor.userId(), score:currentScore}, function(){});
 			}
 
@@ -712,7 +714,7 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<button type="button" class="close closeHighScoreButton" data-dismiss="modal">&times;</button>
-				<h1 class="modal-title text-center">HIGHSCORES {{state 'winMsg'}}</h1>
+				<h1 class="modal-title text-center">HIGHSCORES</h1>
 			</div>
 			<div class="modal-body">
 				<table class="table">
