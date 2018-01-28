@@ -22,9 +22,9 @@
 	<div class="row">
 		<div class="col text-center">
 			{{#if (state 'isRunning')}}
-			<span class="badge">Rescued: {{state 'rescuers'}}</span>
+			<span class="badge">Rescued: {{state 'collected'}}</span>
 			<span class="badge">
-				<i class="fa fa-clock-o"></i> {{state 'timer'}}
+				<i class="fa fa-clock-o"></i> {{state 'count'}}
 			</span>
 			{{/if}}
 		</div>
@@ -36,12 +36,12 @@
 
 
 		function collect(rescuer) {
-			followers.list.splice(followers.list.indexOf(rescuer), 1);
-			const collectedRescuers = state.get('rescuers') + 1;
-			if (collectedRescuers >= state.get('maxRescuers')) {
-				end(true, 'all rescued');
+			followers.list.splice(followers.list.findIndex((el) => el.id === rescuer.id), 1);
+			const collectedRescuers = state.get('collected') + 1;
+			if (collectedRescuers >= state.get('rescuers')) {
+				end(true, 'All rescued!');
 			} else {
-				state.set('rescuers', collectedRescuers);
+				state.set('collected', collectedRescuers);
 			}
 		}
 
@@ -88,6 +88,7 @@
 					signal.update();
 					if (signal.isTransmitting) {
 						for (let target of targets) {
+						    if (this.id === target.id) continue;
 							const result = target.receives(signal);
 							if (result && result.type === 'player' && target.type === 'rescuer') {
 								collect(target);
@@ -120,7 +121,13 @@
 				}
 			},
 			create({posX, posY, strength, type}) {
-				this.list.push(new Follower({posX, posY, strength, type}))
+				const follower = new Follower({posX, posY, strength, type});
+				if (type === 'rescuer') {
+					follower.initTransmission();
+					follower.isTransmitting = true;
+				}
+			    this.list.push(follower);
+				return follower;
 			},
 			draw() {
 				for (let resc of this.list) {
@@ -142,6 +149,8 @@
 
 				this.transmitters = [];
 				this.isTransmitting = false;
+
+				this.id = randomId();
 
 				this.life = 500;
 				this.maxLife = 500;
@@ -168,6 +177,7 @@
 						index: i,
 						strength: this.strength,
 					}))
+					console.log(this.type, this.transmitters)
 				}
 			}
 
@@ -247,16 +257,14 @@
 		}
 
 		class Follower extends Movable {
-			constructor({posX, posY, speed, type, size = 10}) {
-				super({posX, posY, speed});
+			constructor({posX, posY, strength, speed, type, size = 10}) {
+				super({posX, posY, strength, speed});
 				if (type === 'enemy') {
 					this.col = [255, 0, 0];
 					this.sensor = random(this.size * 3, this.size * 9);
 				}
 				if (type === 'rescuer') {
 					this.col = [0, 0, 255];
-					this.initTransmission();
-					this.isTransmitting = true;
 					this.sensor = random(this.size * 2, this.size * 4);
 				}
 				this.size = size;
@@ -267,7 +275,7 @@
 
 			update() {
 				if (this.type === 'rescuer') {
-					this.transmit(this.lifeŝ);
+					this.transmit(this.life);
 				}
 			}
 
@@ -278,7 +286,7 @@
 					if (distance > signal.strength / 2) {
 						return null;
 					}
-					if (distance < 2 && signal.type === 'player') {
+					if (distance < this.size && signal.type === 'player') {
 						return signal;
 					}
 					strength = Math.abs(distance - signal.strength) / 100;
@@ -287,11 +295,12 @@
 					if (distance > signal.strength) {
 						return null;
 					}
-					if (distance < 2) {
+					if (distance < this.size) {
+					    console.log("contact: ", this.type, signal.type);
 						if (signal.type === 'rescuer')
-							end(false, 'all rescuers dead')
+							end(false, 'A rescuer is dead');
 						if (signal.type === 'player')
-							end(false, 'you have been killed')
+							end(false, 'You are dead')
 					}
 					strength = Math.abs(distance - signal.strength) / 250;
 				}
@@ -472,6 +481,7 @@
 		function setup() {
 			const canvas = createCanvas(WIDTH, HEIGHT);
 			canvas.parent('canvas-container');
+			noLoop();
 			cleanupGame();
 		}
 
@@ -482,8 +492,11 @@
 			rescuers = state.get("rescuers");
 			enemies = state.get("enemies");
 			timer = state.get("timer");
+			state.set('count', timer);
+			loop();
 			startScreen = true;
 			isRunning = false;
+			state.set('isRunning', isRunning);
 			noLoop();
 		}
 
@@ -498,11 +511,14 @@
 			signals.list.push(player);
 
 			for (let i = 0; i < rescuers; i++) {
-				followers.create({
+				const resc = followers.create({
 					type: 'rescuer',
+					strength: 100,
+					size: 15,
 					posX: random(0, WIDTH),
 					posY: random(0, HEIGHT)
-				})
+				});
+				signals.list.push(resc);
 			}
 			for (let i = 0; i < enemies; i++) {
 				followers.create({
@@ -516,10 +532,11 @@
 				if (timer <= 0) {
 					end(false, 'time up');
 				}
-				state.set('timer', timer)
+				state.set('count', timer)
 			}, 1000);
 
 			isRunning = true;
+			state.set('isRunning', true);
 			startScreen = false;
 			loop();
 		}
@@ -533,13 +550,13 @@
 			if (startScreen) {
 			    fill(255);
 				textAlign(CENTER);
-				textSize(148);
-				text('NEXT LEVEL', WIDTH/2, HEIGHT / 2 - 100);
+				textSize(100);
+				text('CURRENT LEVEL', WIDTH/2, HEIGHT / 2 - 100);
 				textSize(36);
 				text("Time: " + timer.toString(), WIDTH / 2, HEIGHT / 2 - 50);
 				text("Enemies: " + enemies.toString(), WIDTH / 2, HEIGHT / 2 );
 				text("Rescue: " + rescuers.toString(), WIDTH / 2, HEIGHT / 2 + 50);
-				text("Click screen to start", WIDTH / 2, HEIGHT / 2 + 150);
+				text("CLick to play", WIDTH / 2, HEIGHT / 2 + 150)
 			}
 
 			if (!isRunning) return;
@@ -609,11 +626,11 @@
 			</div>
 			<div class="modal-footer">
 				{{#if (state 'win')}}
-					<button id="retry-level-button" class="btn btn-success">
+					<button id="next-level-button" class="btn btn-success btn-block" data-dismiss="modal">
 						Next Stage
 					</button>
 				{{else}}
-					<button id="next-level-button" class="btn btn-primary">
+					<button id="retry-level-button" class="btn btn-primary btn-block" data-dismiss="modal">
 						Try again
 					</button>
 				{{/if}}

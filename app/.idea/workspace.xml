@@ -18,8 +18,8 @@
       <file leaf-file-name="main.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/client/main.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="405">
-              <caret line="27" column="39" lean-forward="true" selection-start-line="27" selection-start-column="39" selection-end-line="27" selection-end-column="39" />
+            <state relative-caret-position="-73">
+              <caret line="11" column="19" lean-forward="false" selection-start-line="11" selection-start-column="19" selection-end-line="11" selection-end-column="19" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
               </folding>
@@ -30,10 +30,10 @@
       <file leaf-file-name="main.html" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/client/main.html">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="420">
-              <caret line="541" column="73" lean-forward="false" selection-start-line="541" selection-start-column="73" selection-end-line="541" selection-end-column="73" />
+            <state relative-caret-position="227">
+              <caret line="90" column="64" lean-forward="false" selection-start-line="90" selection-start-column="64" selection-end-line="90" selection-end-column="64" />
               <folding>
-                <element signature="e#13242#13249#1#HTML" expanded="true" />
+                <element signature="e#13771#13778#1#HTML" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -61,28 +61,10 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>received</find>
-      <find>new FOllow</find>
-      <find>of targets</find>
-      <find>won</find>
-      <find>speed =</find>
-      <find>rescuers.up</find>
-      <find>signal</find>
-      <find>drawGr</find>
-      <find>% 360</find>
-      <find>transmitter</find>
-      <find>followers.u</find>
-      <find>this.ini</find>
-      <find>initTransmission</find>
-      <find>throw</find>
-      <find>throw new Err</find>
-      <find>isTr</find>
-      <find>rescuers</find>
       <find>enemies</find>
       <find>end</find>
       <find>end(</find>
       <find>.receives</find>
-      <find>collect</find>
       <find>target.type</find>
       <find>mousePressed</find>
       <find>setup()</find>
@@ -90,7 +72,25 @@
       <find>mousePress</find>
       <find>noLoop</find>
       <find>initGa</find>
+      <find>distance</find>
+      <find>.modal</find>
+      <find>ISrUNNING</find>
+      <find>isRunning</find>
+      <find>collect</find>
+      <find>rescued</find>
       <find>clean</find>
+      <find>cl</find>
+      <find>&quot;timer&quot;</find>
+      <find>'timer</find>
+      <find>initGame</find>
+      <find>next leve</find>
+      <find>this.type ===</find>
+      <find>follower</find>
+      <find>follower.ini</find>
+      <find>Follower</find>
+      <find>followers.create</find>
+      <find>followers.crea</find>
+      <find>receive</find>
     </findStrings>
   </component>
   <component name="IdeDocumentHistory">
@@ -364,7 +364,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="43644000" />
+    <option name="totallyTimeSpent" value="47056000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-1" y="25" width="1368" height="744" extended-state="6" />
@@ -427,7 +427,7 @@
         <state relative-caret-position="3420">
           <caret line="228" column="68" lean-forward="false" selection-start-line="228" selection-start-column="68" selection-end-line="228" selection-end-column="68" />
           <folding>
-            <element signature="e#13242#13249#1#HTML" expanded="true" />
+            <element signature="e#13771#13778#1#HTML" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -464,7 +464,7 @@
         <state relative-caret-position="253">
           <caret line="242" column="16" lean-forward="false" selection-start-line="242" selection-start-column="16" selection-end-line="242" selection-end-column="16" />
           <folding>
-            <element signature="e#13242#13249#1#HTML" expanded="true" />
+            <element signature="e#13771#13778#1#HTML" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -492,7 +492,7 @@
         <state relative-caret-position="3420">
           <caret line="228" column="68" lean-forward="false" selection-start-line="228" selection-start-column="68" selection-end-line="228" selection-end-column="68" />
           <folding>
-            <element signature="e#13242#13249#1#HTML" expanded="true" />
+            <element signature="e#13771#13778#1#HTML" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -516,8 +516,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/client/main.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="405">
-          <caret line="27" column="39" lean-forward="true" selection-start-line="27" selection-start-column="39" selection-end-line="27" selection-end-column="39" />
+        <state relative-caret-position="-73">
+          <caret line="11" column="19" lean-forward="false" selection-start-line="11" selection-start-column="19" selection-end-line="11" selection-end-column="19" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
           </folding>
@@ -526,10 +526,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/client/main.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="420">
-          <caret line="541" column="73" lean-forward="false" selection-start-line="541" selection-start-column="73" selection-end-line="541" selection-end-column="73" />
+        <state relative-caret-position="227">
+          <caret line="90" column="64" lean-forward="false" selection-start-line="90" selection-start-column="64" selection-end-line="90" selection-end-column="64" />
           <folding>
-            <element signature="e#13242#13249#1#HTML" expanded="true" />
+            <element signature="e#13771#13778#1#HTML" expanded="true" />
           </folding>
         </state>
       </provider>
