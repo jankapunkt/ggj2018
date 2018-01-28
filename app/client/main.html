@@ -121,9 +121,6 @@
 						continue;
 					}
 					signal.update();
-					if (signal.type === 'player') {
-					 	console.log(signal);
-					}
 					if (signal.isTransmitting) {
 						for (j = targets.length - 1; j >= 0; j--) {
 
@@ -361,7 +358,7 @@
 
 			notify({x, y, strength}) {
 				this.isFollowing = true;
-				if (this.type === 'followe') this.isTransmitting = true;
+				if (this.type === 'rescuer') this.isTransmitting = true;
 				this.updateDir(x, y);
 				this.move(strength);
 			}
