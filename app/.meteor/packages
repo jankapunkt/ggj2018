@@ -22,3 +22,6 @@ insecure@1.0.7                # Allow all DB writes from clients (for prototypin
 fortawesome:fontawesome
 jkuester:template-states
 reactive-dict
+accounts-base
+accounts-password
+accounts-ui

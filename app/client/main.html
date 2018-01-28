@@ -7,25 +7,28 @@
 	<div class="container">
 		<div class="navbar-header">
 			<a class="navbar-brand" href="#">
-				<img alt="Brand" src="./brand.png">
+				Rescue me Quietly
+				<!--<img alt="Brand" src="./brand.png">-->
 			</a>
 		</div>
 		<ul class="nav navbar-nav pull-right">
 			<li>
-				<a class="navbar-link" href="/scores">Highscores</a>
+				<a id="highScoresButton" class="navbar-link" href>High Scores</a>
 			</li>
 		</ul>
-
+		{{> loginButtons}}
 	</div>
 </nav>
 <div class="container">
 	<div class="row">
 		<div class="col text-center">
 			{{#if (state 'isRunning')}}
-			<span class="badge">Rescued: {{state 'collected'}}</span>
-			<span class="badge">
+				<span class="badge">Rescued: {{state 'collected'}} / {{state 'rescuers'}}</span>
+				<span class="badge">
 				<i class="fa fa-clock-o"></i> {{state 'count'}}
 			</span>
+			{{else}}
+				<input type="number" id="levelSelect" />
 			{{/if}}
 		</div>
 	</div>
@@ -36,7 +39,14 @@
 
 
 		function collect(rescuer) {
-			followers.list.splice(followers.list.findIndex((el) => el.id === rescuer.id), 1);
+			let index = followers.list.findIndex((el) => el.id === rescuer.id);
+			console.log("collect rescuer at ", index, rescuer.type);
+			if (index === -1) throw new Error("unexpected index");
+			followers.list.splice(index, 1);
+
+			index = signals.list.findIndex((el) => el.id === rescuer.id);
+			signals.list.splice(index, 1);
+			console.log("removed", followers.list, signals.list);
 			const collectedRescuers = state.get('collected') + 1;
 			if (collectedRescuers >= state.get('rescuers')) {
 				end(true, 'All rescued!');
@@ -87,12 +97,29 @@
 					}
 					signal.update();
 					if (signal.isTransmitting) {
-						for (let target of targets) {
-						    if (this.id === target.id) continue;
-							const result = target.receives(signal);
-							if (result && result.type === 'player' && target.type === 'rescuer') {
-								collect(target);
-								this.list.splice(i, 1);
+						for (let follower of targets) {
+
+							if (signal.id === follower.id || signal.type === follower.type)
+								continue;
+
+							follower.receives(signal);
+
+							if (signal.type !== 'player' && signal.type !== 'rescuer')
+								continue;
+
+							if (follower.hit(signal.pos.x, signal.pos.y, signal.size)) {
+								console.log("follower hit signal: ", follower.type, signal.type);
+								if (follower.type === 'enemy') {
+									if (signal.type === 'rescuer')
+										end(false, 'A rescuer is dead');
+									if (signal.type === 'player')
+										end(false, 'You are dead')
+								}
+
+								if (signal.type === 'player' && follower.type === 'rescuer') {
+									collect(follower);
+									this.list.splice(i, 1);
+								}
 							}
 						}
 					}
@@ -123,10 +150,10 @@
 			create({posX, posY, strength, type}) {
 				const follower = new Follower({posX, posY, strength, type});
 				if (type === 'rescuer') {
-					follower.initTransmission();
+					follower.initTransmission({visible: false});
 					follower.isTransmitting = true;
 				}
-			    this.list.push(follower);
+				this.list.push(follower);
 				return follower;
 			},
 			draw() {
@@ -170,12 +197,13 @@
 				return vec;
 			}
 
-			initTransmission() {
+			initTransmission({visible}) {
 				for (let i = 1; i < 5; i++) {
 					this.transmitters.push(createTransmitter({
 						pos: this.pos,
 						index: i,
 						strength: this.strength,
+						visible
 					}))
 					console.log(this.type, this.transmitters)
 				}
@@ -221,10 +249,10 @@
 				this.pos = this.bounds(this.pos);
 			}
 
-			hit(x2, y2) {
+			hit(x2, y2, size = 0) {
 				const x = this.pos.x;
 				const y = this.pos.y;
-				const rad = 10;
+				const rad = this.size;
 				return !( x > ( x2 + rad ) || x < (x2 - rad) || y > ( y2 + rad ) || y < (y2 - rad) );
 			}
 		}
@@ -234,7 +262,7 @@
 				super({posX, posY, strength: 75});
 				this.col = 255;
 				this.size = 10;
-				this.initTransmission();
+				this.initTransmission({});
 				this.isTransmitting = true;
 				this.type = 'player';
 			}
@@ -286,21 +314,11 @@
 					if (distance > signal.strength / 2) {
 						return null;
 					}
-					if (distance < this.size && signal.type === 'player') {
-						return signal;
-					}
 					strength = Math.abs(distance - signal.strength) / 100;
 				}
 				if (this.type === 'enemy') {
 					if (distance > signal.strength) {
 						return null;
-					}
-					if (distance < this.size) {
-					    console.log("contact: ", this.type, signal.type);
-						if (signal.type === 'rescuer')
-							end(false, 'A rescuer is dead');
-						if (signal.type === 'player')
-							end(false, 'You are dead')
 					}
 					strength = Math.abs(distance - signal.strength) / 250;
 				}
@@ -362,7 +380,7 @@
 					this.isTransmitting = this.hit(this.dir.x, this.dir.y);
 					if (this.isTransmitting) {
 						this.drawTarget = false;
-						this.initTransmission();
+						this.initTransmission({});
 					}
 				} else {
 					this.transmit(this.life);
@@ -411,12 +429,13 @@
 		//////////////////////////////////////////////////////////////////
 
 
-		function createTransmitter({pos, strength, index}) {
+		function createTransmitter({pos, strength, index, visible = true}) {
 			return {
 				pos,
 				size: strength / index,
 				strength: strength,
 				index,
+				visible,
 				col: 255,
 				update() {
 					if (this.size > this.strength)
@@ -425,6 +444,7 @@
 					this.col = 255 - 255 * (this.size / this.strength);
 				},
 				draw(life) {
+					if (!visible) return;
 					fill(0, 0, 0, 0);
 					if (life)
 						stroke(255 - life, life, 0, this.col);
@@ -441,6 +461,7 @@
 		let player;
 
 		function mousePressed() {
+			if (state.get('modal')) return;
 			if (!isRunning) return;
 			if (mouseX < 0 || mouseX > WIDTH) return false;
 			setStrength = true;
@@ -448,8 +469,9 @@
 		}
 
 		function mouseReleased() {
+			if (state.get('modal')) return;
 			if (!isRunning) return;
-		    if (mouseX < 0 || mouseX > WIDTH) return false;
+			if (mouseX < 0 || mouseX > WIDTH) return false;
 			setStrength = false;
 			signals.create({
 				posX: player.pos.x,
@@ -485,7 +507,7 @@
 			cleanupGame();
 		}
 
-		function  cleanupGame() {
+		function cleanupGame() {
 			signals.list.length = 0;
 			timer = 0;
 			followers.list.length = 0;
@@ -501,7 +523,7 @@
 		}
 
 		function initGame() {
-		    console.log("init game");
+			console.log("init game");
 
 			rescuers = state.get("rescuers");
 			enemies = state.get("enemies");
@@ -548,15 +570,15 @@
 			background(0);
 
 			if (startScreen) {
-			    fill(255);
+				fill(255);
 				textAlign(CENTER);
 				textSize(100);
-				text('CURRENT LEVEL', WIDTH/2, HEIGHT / 2 - 100);
+				text('CURRENT LEVEL', WIDTH / 2, HEIGHT / 2 - 100);
 				textSize(36);
 				text("Time: " + timer.toString(), WIDTH / 2, HEIGHT / 2 - 50);
-				text("Enemies: " + enemies.toString(), WIDTH / 2, HEIGHT / 2 );
+				text("Enemies: " + enemies.toString(), WIDTH / 2, HEIGHT / 2);
 				text("Rescue: " + rescuers.toString(), WIDTH / 2, HEIGHT / 2 + 50);
-				text("CLick to play", WIDTH / 2, HEIGHT / 2 + 150)
+				text("Doubleclick to play", WIDTH / 2, HEIGHT / 2 + 150)
 			}
 
 			if (!isRunning) return;
@@ -592,18 +614,25 @@
 			debugui();
 		}
 
-		function mouseClicked() {
-		    if (startScreen && !isRunning) {
-		        initGame();
+		function doubleClicked() {
+			if (state.get('modal')) return;
+			if (startScreen && !isRunning) {
+				initGame();
 			}
 		}
 
 		function end(success, message) {
 			noLoop();
 			isRunning = false;
-			clearTimeout(timerId)
+			clearTimeout(timerId);
 			state.set('win', success);
 			state.set('winMsg', message);
+			state.set('currentScore', enemies * rescuers + timer);
+			//console.log('end: ', success, message, state.get('win'), state.get('winMsg'), state.get('currentScore'));
+			if (Meteor.user() && Meteor.userId()) {
+				//Meteor.call('updateScore', {userId:Meteor.userId(), score}, function(){});
+			}
+
 			$('#end-modal').modal();
 		}
 
@@ -618,10 +647,19 @@
 						'winMsg'}}</h4>
 			</div>
 			<div class="modal-body">
+				<span>{{debug}}</span>
 				{{#if (state 'win')}}
-					<p>Great! You should move to the next stage! Continue?</p>
+					<p class="text-center">Score earned:</p>
+					<h1 class="text-center">{{state 'currentScore'}}</h1>
+
+					{{#if currentUser}}
+						<p class="text-center">Your total score:</p>
+						<h1 class="text-center">{{currentUser.score}}</h1>
+					{{else}}
+						<p class="text-center">Register to collect your score and become a master-rescuer!</p>
+					{{/if}}
 				{{else}}
-					<p>C'mon try again! You can do it! :-P</p>
+					<h2 class="text-center">C'mon try again! You can do it! :-P</h2>
 				{{/if}}
 			</div>
 			<div class="modal-footer">
@@ -634,6 +672,33 @@
 						Try again
 					</button>
 				{{/if}}
+			</div>
+		</div>
+	</div>
+</div>
+<div id="score-modal" class="modal fade" data-backdrop="static" data-keyboard="false" role="dialog">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close closeHighScoreButton" data-dismiss="modal">&times;</button>
+				<h1 class="modal-title text-center">HIGHSCORES {{state 'winMsg'}}</h1>
+			</div>
+			<div class="modal-body">
+				<table class="table">
+					<tbody>
+					{{#each highScores}}
+						<tr>
+							<td>{{this.score}}</td>
+							<td>{{this.username}}</td>
+						</tr>
+					{{else}}
+						<tr>
+							<td>NO SCORES YET</td>
+						</tr>
+					{{/each}}
+
+					</tbody>
+				</table>
 			</div>
 		</div>
 	</div>

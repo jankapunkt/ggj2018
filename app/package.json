@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "babel-runtime": "^6.26.0",
+    "bcrypt": "^1.0.3",
     "bootstrap": "^3.3.7",
     "matter-js": "^0.14.1",
     "meteor-node-stubs": "^0.3.2",
