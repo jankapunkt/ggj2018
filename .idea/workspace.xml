@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="5649c67c-b37c-4483-b8f3-37496845ea15" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/client/main.html" afterPath="$PROJECT_DIR$/app/client/main.html" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/client/main.js" afterPath="$PROJECT_DIR$/app/client/main.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/public/main.css" afterPath="$PROJECT_DIR$/app/public/main.css" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/server/main.js" afterPath="$PROJECT_DIR$/app/server/main.js" />
-    </list>
+    <list default="true" id="5649c67c-b37c-4483-b8f3-37496845ea15" name="Default" comment="" />
     <ignored path="$PROJECT_DIR$/.tmp/" />
     <ignored path="$PROJECT_DIR$/temp/" />
     <ignored path="$PROJECT_DIR$/tmp/" />
@@ -21,7 +15,7 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="main.html" pinned="false" current-in-tab="true">
+      <file leaf-file-name="main.html" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/client/main.html">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="242">
@@ -65,7 +59,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="README.md" pinned="false" current-in-tab="false">
+      <file leaf-file-name="README.md" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/README.md">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="60">
@@ -385,12 +379,12 @@
       <option name="presentableId" value="Default" />
       <updated>1516979400618</updated>
       <workItem from="1516979402184" duration="815000" />
-      <workItem from="1517141728851" duration="9480000" />
+      <workItem from="1517141728851" duration="9615000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="10295000" />
+    <option name="totallyTimeSpent" value="10430000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-1" y="25" width="1368" height="744" extended-state="6" />
@@ -452,14 +446,6 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/index.js" />
     <entry file="file://$PROJECT_DIR$/index.html" />
-    <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="4" column="0" lean-forward="false" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/public/main.css">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="541">
@@ -493,6 +479,14 @@
           <folding>
             <element signature="e#16994#17001#1#HTML" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="0" lean-forward="false" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
